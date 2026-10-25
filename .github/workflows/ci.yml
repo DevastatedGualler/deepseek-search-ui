@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Syntax check
+        run: npm test
+
+      - name: Demo smoke test
+        run: |
+          node server.mjs --demo &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:5178/api/config -o /tmp/config.json; then
+              break
+            fi
+            sleep 0.5
+          done
+
+          node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('/tmp/config.json','utf8'));if(!c.demo)throw new Error('demo mode not enabled');"
+
+          curl -fsS -X POST http://127.0.0.1:5178/api/search \
+            -H 'Content-Type: application/json' \
+            -d '{"query":"DeepSeek Search API","count":5}' \
+            -o /tmp/search.json
+
+          node -e "const fs=require('fs');const d=JSON.parse(fs.readFileSync('/tmp/search.json','utf8'));if(!Array.isArray(d.results)||d.results.length===0)throw new Error('no demo results');"
+
+          curl -fsS -X POST http://127.0.0.1:5178/api/fetch \
+            -H 'Content-Type: application/json' \
+            -d '{"url":"https://api-docs.deepseek.com/guides/search"}' \
+            -o /tmp/fetch.json
+
+          node -e "const fs=require('fs');const d=JSON.parse(fs.readFileSync('/tmp/fetch.json','utf8'));if(!d.content)throw new Error('empty demo content');"

@@ -1,0 +1,25 @@
+{
+  "name": "deepseek-search-ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "An unofficial, zero-dependency search-engine UI for the DeepSeek Search & Fetch APIs.",
+  "license": "MIT",
+  "keywords": [
+    "deepseek",
+    "search-api",
+    "search-engine",
+    "web-search",
+    "nodejs",
+    "vanilla-js"
+  ],
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs",
+    "demo": "node server.mjs --demo",
+    "test": "node --check server.mjs && node --check public/app.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
